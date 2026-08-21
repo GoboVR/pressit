@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRESS — local media compression</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0D141F;
+    --ink-2:#111A28;
+    --paper:#EAEEF2;
+    --paper-dim:#9FB0C0;
+    --blueprint:#3E7CB1;
+    --blueprint-bright:#7FC4E0;
+    --amber:#E8A33D;
+    --grid: rgba(127,196,224,0.07);
+    --line: rgba(127,196,224,0.28);
+    --ok:#7FD8A6;
+    --font-display:'Space Grotesk', 'Arial Narrow', sans-serif;
+    --font-body:'IBM Plex Sans', system-ui, sans-serif;
+    --font-mono:'IBM Plex Mono', 'Courier New', monospace;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+
+  body{
+    background:
+      linear-gradient(var(--grid) 1px, transparent 1px) 0 0/40px 40px,
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0/40px 40px,
+      var(--ink);
+    color:var(--paper);
+    font-family:var(--font-body);
+    min-height:100vh;
+    padding:32px 20px 80px;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .wrap{max-width:760px;margin:0 auto;}
+
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    border-bottom:1px solid var(--line);
+    padding-bottom:18px;
+    margin-bottom:34px;
+    gap:16px;
+    flex-wrap:wrap;
+  }
+  .eyebrow{
+    font-family:var(--font-mono);
+    font-size:11px;
+    letter-spacing:.18em;
+    color:var(--blueprint-bright);
+    text-transform:uppercase;
+    margin:0 0 6px;
+  }
+  h1{
+    font-family:var(--font-display);
+    font-weight:700;
+    font-size:clamp(32px,6vw,44px);
+    letter-spacing:-0.01em;
+    margin:0;
+    color:var(--paper);
+  }
+  h1 span{color:var(--amber);}
+  .spec{
+    font-family:var(--font-mono);
+    font-size:11px;
+    color:var(--paper-dim);
+    text-align:right;
+    line-height:1.6;
+  }
+
+  /* Drop zone with drafting corner marks */
+  .dropzone{
+    position:relative;
+    border:1px dashed var(--line);
+    padding:46px 24px;
+    text-align:center;
+    cursor:pointer;
+    transition:border-color .15s ease, background .15s ease;
+    background:rgba(127,196,224,0.02);
+  }
+  .dropzone.drag{
+    border-color:var(--amber);
+    background:rgba(232,163,61,0.06);
+  }
+  .dropzone .corner{
+    position:absolute;
+    width:16px;height:16px;
+    border:2px solid var(--blueprint-bright);
+    opacity:.8;
+  }
+  .corner.tl{top:-1px;left:-1px;border-right:none;border-bottom:none;}
+  .corner.tr{top:-1px;right:-1px;border-left:none;border-bottom:none;}
+  .corner.bl{bottom:-1px;left:-1px;border-right:none;border-top:none;}
+  .corner.br{bottom:-1px;right:-1px;border-left:none;border-top:none;}
+
+  .dz-label{
+    font-family:var(--font-display);
+    font-size:18px;
+    font-weight:600;
+    margin:0 0 6px;
+  }
+  .dz-sub{
+    font-family:var(--font-mono);
+    font-size:12px;
+    color:var(--paper-dim);
+    margin:0;
+  }
+  input[type=file]{display:none;}
+
+  /* File readout */
+  .file-readout{
+    display:none;
+    margin-top:22px;
+    border:1px solid var(--line);
+    padding:16px 18px;
+  }
+  .file-readout.show{display:block;}
+  .fr-row{
+    display:flex;
+    justify-content:space-between;
+    font-family:var(--font-mono);
+    font-size:12px;
+    padding:4px 0;
+    color:var(--paper-dim);
+    gap:12px;
+  }
+  .fr-row b{color:var(--paper);font-weight:500;}
+  .fr-name{color:var(--paper);word-break:break-all;}
+
+  /* Target controls */
+  .controls{
+    display:none;
+    margin-top:24px;
+  }
+  .controls.show{display:block;}
+  .ctrl-label{
+    font-family:var(--font-mono);
+    font-size:11px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--blueprint-bright);
+    margin-bottom:10px;
+  }
+  .target-row{
+    display:flex;
+    gap:10px;
+    align-items:stretch;
+  }
+  .target-row input[type=number]{
+    flex:1;
+    background:var(--ink-2);
+    border:1px solid var(--line);
+    color:var(--paper);
+    font-family:var(--font-mono);
+    font-size:16px;
+    padding:12px 14px;
+  }
+  .target-row input[type=number]:focus{outline:none;border-color:var(--amber);}
+  select{
+    background:var(--ink-2);
+    border:1px solid var(--line);
+    color:var(--paper);
+    font-family:var(--font-mono);
+    font-size:14px;
+    padding:0 12px;
+  }
+
+  .options{
+    margin-top:16px;
+    font-family:var(--font-mono);
+    font-size:12px;
+    color:var(--paper-dim);
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .options input{accent-color:var(--amber);}
+
+  /* Gauge: dimension line showing original -> target */
+  .gauge{
+    margin-top:26px;
+    display:none;
+  }
+  .gauge.show{display:block;}
+  .gauge-track{
+    position:relative;
+    height:6px;
+    background:var(--ink-2);
+    border:1px solid var(--line);
+    margin:26px 0 10px;
+  }
+  .gauge-fill{
+    position:absolute;
+    top:0;left:0;bottom:0;
+    width:0%;
+    background:var(--blueprint);
+    transition:width .25s ease;
+  }
+  .gauge-target-mark{
+    position:absolute;
+    top:-8px;bottom:-8px;
+    width:2px;
+    background:var(--amber);
+    left:0%;
+  }
+  .gauge-target-mark::after{
+    content:'TARGET';
+    position:absolute;
+    top:-18px;
+    left:50%;
+    transform:translateX(-50%);
+    font-family:var(--font-mono);
+    font-size:9px;
+    letter-spacing:.1em;
+    color:var(--amber);
+    white-space:nowrap;
+  }
+  .gauge-ticks{
+    display:flex;
+    justify-content:space-between;
+    font-family:var(--font-mono);
+    font-size:10px;
+    color:var(--paper-dim);
+  }
+
+  button.press{
+    margin-top:22px;
+    width:100%;
+    padding:16px;
+    background:var(--amber);
+    color:var(--ink);
+    border:none;
+    font-family:var(--font-display);
+    font-weight:700;
+    font-size:16px;
+    letter-spacing:.03em;
+    cursor:pointer;
+    transition:filter .15s ease, transform .05s ease;
+  }
+  button.press:hover{filter:brightness(1.08);}
+  button.press:active{transform:scale(.995);}
+  button.press:disabled{
+    background:var(--ink-2);
+    color:var(--paper-dim);
+    border:1px solid var(--line);
+    cursor:not-allowed;
+  }
+
+  .status{
+    display:none;
+    margin-top:16px;
+    font-family:var(--font-mono);
+    font-size:12px;
+    color:var(--blueprint-bright);
+  }
+  .status.show{display:block;}
+
+  .result{
+    display:none;
+    margin-top:26px;
+    border:1px solid var(--ok);
+    padding:20px;
+    background:rgba(127,216,166,0.05);
+  }
+  .result.show{display:block;}
+  .result-head{
+    font-family:var(--font-display);
+    font-weight:600;
+    font-size:16px;
+    color:var(--ok);
+    margin:0 0 12px;
+  }
+  .result-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px 20px;
+    font-family:var(--font-mono);
+    font-size:12px;
+    color:var(--paper-dim);
+    margin-bottom:16px;
+  }
+  .result-grid b{display:block;color:var(--paper);font-size:15px;font-weight:500;margin-top:2px;}
+  a.download{
+    display:block;
+    text-align:center;
+    padding:14px;
+    background:var(--paper);
+    color:var(--ink);
+    text-decoration:none;
+    font-family:var(--font-display);
+    font-weight:700;
+    font-size:15px;
+  }
+  a.download:hover{filter:brightness(.95);}
+
+  .note{
+    display:none;
+    margin-top:12px;
+    font-family:var(--font-mono);
+    font-size:11px;
+    color:var(--paper-dim);
+    line-height:1.6;
+    border-left:2px solid var(--line);
+    padding-left:12px;
+  }
+  .note.show{display:block;}
+
+  footer{
+    margin-top:60px;
+    padding-top:18px;
+    border-top:1px solid var(--line);
+    font-family:var(--font-mono);
+    font-size:11px;
+    color:var(--paper-dim);
+    line-height:1.7;
+  }
+  footer strong{color:var(--paper-dim);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <p class="eyebrow">Local compression bench</p>
+      <h1>PRE<span>SS</span></h1>
+    </div>
+    <div class="spec">
+      NO UPLOAD // NO SERVER<br>
+      RUNS IN-BROWSER ONLY
+    </div>
+  </header>
+
+  <div class="dropzone" id="dropzone">
+    <div class="corner tl"></div><div class="corner tr"></div>
+    <div class="corner bl"></div><div class="corner br"></div>
+    <p class="dz-label">Drop a file, or click to select</p>
+    <p class="dz-sub">Images, video &amp; audio are re-encoded to hit your target size · everything else is gzip-compressed · all local</p>
+    <input type="file" id="fileInput">
+  </div>
+
+  <div class="file-readout" id="fileReadout">
+    <div class="fr-row"><span>NAME</span><b class="fr-name" id="frName"></b></div>
+    <div class="fr-row"><span>TYPE</span><b id="frType"></b></div>
+    <div class="fr-row"><span>ORIGINAL SIZE</span><b id="frSize"></b></div>
+  </div>
+
+  <div class="controls" id="controls">
+    <p class="ctrl-label">Target size</p>
+    <div class="target-row">
+      <input type="number" id="targetValue" min="1" value="500" inputmode="numeric">
+      <select id="targetUnit">
+        <option value="1024">KB</option>
+        <option value="1048576">MB</option>
+      </select>
+    </div>
+
+    <div class="options" id="pngOption" style="display:none;">
+      <input type="checkbox" id="allowJpeg" checked>
+      <label for="allowJpeg">Allow converting PNG → JPEG if needed to hit target (loses transparency)</label>
+    </div>
+
+    <div class="note" id="modeNote"></div>
+
+    <div class="gauge" id="gauge">
+      <div class="gauge-track">
+        <div class="gauge-fill" id="gaugeFill"></div>
+        <div class="gauge-target-mark" id="gaugeTargetMark"></div>
+      </div>
+      <div class="gauge-ticks">
+        <span>0</span>
+        <span id="gaugeMaxLabel"></span>
+      </div>
+    </div>
+
+    <button class="press" id="pressBtn">COMPRESS</button>
+    <p class="status" id="status"></p>
+  </div>
+
+  <div class="result" id="result">
+    <p class="result-head">Done</p>
+    <div class="result-grid">
+      <div>ORIGINAL<b id="resOriginal"></b></div>
+      <div>RESULT<b id="resFinal"></b></div>
+      <div>REDUCTION<b id="resRatio"></b></div>
+      <div>TARGET MET<b id="resMet"></b></div>
+    </div>
+    <a class="download" id="downloadLink" download>Download compressed file</a>
+    <p class="note show" id="resultNote"></p>
+  </div>
+
+  <footer>
+    <strong>How this works —</strong> your file is never uploaded anywhere; all processing happens on your device. Images (JPEG/PNG/WebP) are re-encoded by searching JPEG quality and, if needed, scaling dimensions down. Video and audio are re-encoded with a real copy of FFmpeg compiled to WebAssembly, running entirely in the browser tab — video is muxed to H.264/AAC MP4, audio to MP3, at a bitrate calculated from your target size and the clip's duration. One exception to "nothing over the network": the first time you compress a video or audio file, your browser fetches the FFmpeg engine itself (~30MB, from jsDelivr's CDN) — a one-time download of the *tool*, never your file — and it's cached after that. Everything else is compressed with the browser's built-in gzip, which is lossless and best-effort, so it can't be forced to hit an exact size, especially for formats with little redundancy left (zip, jpg, mp3…). This page is fully static and safe to host on GitHub Pages as-is.
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const fileReadout = document.getElementById('fileReadout');
+  const frName = document.getElementById('frName');
+  const frType = document.getElementById('frType');
+  const frSize = document.getElementById('frSize');
+  const controls = document.getElementById('controls');
+  const targetValue = document.getElementById('targetValue');
+  const targetUnit = document.getElementById('targetUnit');
+  const pngOption = document.getElementById('pngOption');
+  const allowJpeg = document.getElementById('allowJpeg');
+  const modeNote = document.getElementById('modeNote');
+  const gauge = document.getElementById('gauge');
+  const gaugeFill = document.getElementById('gaugeFill');
+  const gaugeTargetMark = document.getElementById('gaugeTargetMark');
+  const gaugeMaxLabel = document.getElementById('gaugeMaxLabel');
+  const pressBtn = document.getElementById('pressBtn');
+  const status = document.getElementById('status');
+  const result = document.getElementById('result');
+  const resOriginal = document.getElementById('resOriginal');
+  const resFinal = document.getElementById('resFinal');
+  const resRatio = document.getElementById('resRatio');
+  const resMet = document.getElementById('resMet');
+  const downloadLink = document.getElementById('downloadLink');
+  const resultNote = document.getElementById('resultNote');
+
+  let currentFile = null;
+
+  function fmtBytes(n){
+    if(n < 1024) return n + ' B';
+    if(n < 1024*1024) return (n/1024).toFixed(1) + ' KB';
+    return (n/(1024*1024)).toFixed(2) + ' MB';
+  }
+
+  const VIDEO_EXT = ['mp4','mov','mkv','avi','webm','m4v','wmv','flv','mpg','mpeg','3gp'];
+  const AUDIO_EXT = ['mp3','wav','flac','aac','ogg','m4a','wma','opus','aiff','alac'];
+
+  function ext(file){
+    const parts = file.name.split('.');
+    return parts.length > 1 ? parts.pop().toLowerCase() : '';
+  }
+  function isImage(file){
+    return /^image\/(jpeg|jpg|png|webp)$/.test(file.type);
+  }
+  function isVideo(file){
+    return /^video\//.test(file.type) || VIDEO_EXT.includes(ext(file));
+  }
+  function isAudio(file){
+    return /^audio\//.test(file.type) || AUDIO_EXT.includes(ext(file));
+  }
+  function detectMode(file){
+    if(isImage(file)) return 'image';
+    if(isVideo(file)) return 'video';
+    if(isAudio(file)) return 'audio';
+    return 'generic';
+  }
+
+  function updateGauge(){
+    const target = Number(targetValue.value) * Number(targetUnit.value);
+    const original = currentFile.size;
+    const max = Math.max(original, target) * 1.05;
+    const pct = Math.min(100, (target / max) * 100);
+    gaugeTargetMark.style.left = pct + '%';
+    gaugeMaxLabel.textContent = fmtBytes(max);
+    gaugeFill.style.width = '0%';
+  }
+
+  function setFile(file){
+    currentFile = file;
+    frName.textContent = file.name;
+    frType.textContent = file.type || 'unknown';
+    frSize.textContent = fmtBytes(file.size);
+    fileReadout.classList.add('show');
+    controls.classList.add('show');
+    gauge.classList.add('show');
+    result.classList.remove('show');
+    status.classList.remove('show');
+
+    const mode = detectMode(file);
+    pngOption.style.display = (mode === 'image' && file.type === 'image/png') ? 'flex' : 'none';
+
+    if(mode === 'image'){
+      modeNote.textContent = 'Detected an image — quality and dimensions will be adjusted to reach the target size.';
+    } else if(mode === 'video'){
+      modeNote.textContent = 'Detected video — will be re-encoded to H.264/AAC MP4 at a bitrate calculated for your target size. First run downloads the compression engine (~30MB, one-time, cached). Encoding is single-threaded in-browser, so longer clips take a while.';
+    } else if(mode === 'audio'){
+      modeNote.textContent = 'Detected audio — will be re-encoded to MP3 at a bitrate calculated for your target size. First run downloads the compression engine (~30MB, one-time, cached).';
+    } else {
+      modeNote.textContent = 'Unrecognized type — will be gzip-compressed. This is lossless and best-effort; it may not reach the exact target, particularly for already-compressed formats.';
+    }
+    modeNote.classList.add('show');
+
+    // sensible default target: 50% of original, min 1KB
+    const half = Math.max(1, Math.round(file.size * 0.5));
+    if(half > 1024*1024){
+      targetUnit.value = String(1024*1024);
+      targetValue.value = (half/(1024*1024)).toFixed(1);
+    } else {
+      targetUnit.value = '1024';
+      targetValue.value = Math.max(1, Math.round(half/1024));
+    }
+    updateGauge();
+  }
+
+  dropzone.addEventListener('click', () => fileInput.click());
+  dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
+  dropzone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropzone.classList.remove('drag');
+    if(e.dataTransfer.files.length) setFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener('change', e => {
+    if(e.target.files.length) setFile(e.target.files[0]);
+  });
+  targetValue.addEventListener('input', updateGauge);
+  targetUnit.addEventListener('change', updateGauge);
+
+  function setStatus(msg){
+    status.textContent = msg;
+    status.classList.add('show');
+  }
+
+  function animateFill(pct){
+    gaugeFill.style.width = Math.min(100, pct) + '%';
+  }
+
+  // ---- Image compression: binary search quality, then downscale if needed ----
+  async function loadImage(file){
+    const bitmap = await createImageBitmap(file);
+    return bitmap;
+  }
+
+  function canvasToBlob(canvas, type, quality){
+    return new Promise(resolve => canvas.toBlob(resolve, type, quality));
+  }
+
+  async function compressImage(file, targetBytes){
+    const bitmap = await loadImage(file);
+    let width = bitmap.width, height = bitmap.height;
+    const originalIsPng = file.type === 'image/png';
+    const useJpeg = !originalIsPng || allowJpeg.checked;
+    const outType = useJpeg ? 'image/jpeg' : 'image/png';
+
+    let bestBlob = null;
+    let attempts = 0;
+    const maxAttempts = 40;
+
+    while(attempts < maxAttempts){
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(width));
+      canvas.height = Math.max(1, Math.round(height));
+      const ctx = canvas.getContext('2d');
+      if(!useJpeg){
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+      } else {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+      }
+      ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+
+      if(useJpeg){
+        // binary search quality at this resolution
+        let lo = 0.03, hi = 0.97, blob = null;
+        for(let i=0;i<8;i++){
+          attempts++;
+          const mid = (lo+hi)/2;
+          blob = await canvasToBlob(canvas, 'image/jpeg', mid);
+          setStatus(`Searching quality… ${Math.round(mid*100)}% @ ${canvas.width}×${canvas.height} → ${fmtBytes(blob.size)}`);
+          animateFill((targetBytes / Math.max(blob.size, targetBytes)) * 60);
+          if(blob.size > targetBytes){
+            hi = mid;
+          } else {
+            lo = mid;
+            bestBlob = blob;
+          }
+        }
+        if(!bestBlob) bestBlob = blob; // even lowest quality didn't fit; keep smallest found
+        if(bestBlob.size <= targetBytes){
+          return bestBlob;
+        }
+        // still too big even at quality 0.03 -> scale down and retry
+        width *= 0.85;
+        height *= 0.85;
+        if(width < 24 || height < 24){
+          return bestBlob;
+        }
+      } else {
+        // PNG: no quality knob, only scaling helps
+        attempts++;
+        const blob = await canvasToBlob(canvas, 'image/png');
+        setStatus(`Scaling PNG… ${canvas.width}×${canvas.height} → ${fmtBytes(blob.size)}`);
+        animateFill((targetBytes / Math.max(blob.size, targetBytes)) * 60);
+        if(blob.size <= targetBytes){
+          return blob;
+        }
+        bestBlob = blob;
+        width *= 0.85;
+        height *= 0.85;
+        if(width < 24 || height < 24){
+          return bestBlob;
+        }
+      }
+    }
+    return bestBlob;
+  }
+
+  // ---- Video / audio: FFmpeg compiled to WebAssembly, single-thread core (no COOP/COEP needed) ----
+  let ffmpegInstance = null;
+  let ffmpegLoadPromise = null;
+  const FFMPEG_VERSION = '0.12.10';
+  const FFMPEG_UTIL_VERSION = '0.12.1';
+  const FFMPEG_CORE_VERSION = '0.12.6';
+
+  function withTimeout(promise, ms, message){
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error(message)), ms))
+    ]);
+  }
+
+  function getFFmpeg(){
+    if(ffmpegInstance) return Promise.resolve(ffmpegInstance);
+    if(ffmpegLoadPromise) return ffmpegLoadPromise;
+    ffmpegLoadPromise = (async () => {
+      setStatus('Loading compression engine (first time only, ~30MB)…');
+      try{
+        const { FFmpeg } = await withTimeout(
+          import(`https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@${FFMPEG_VERSION}/dist/esm/index.js`),
+          20000, 'Timed out fetching the FFmpeg library. A privacy/tracking-protection shield or ad-blocker may be blocking cdn.jsdelivr.net — try disabling it for this site, or use a different browser.'
+        );
+        const { toBlobURL } = await withTimeout(
+          import(`https://cdn.jsdelivr.net/npm/@ffmpeg/util@${FFMPEG_UTIL_VERSION}/dist/esm/index.js`),
+          20000, 'Timed out fetching FFmpeg utilities. A privacy/tracking-protection shield or ad-blocker may be blocking cdn.jsdelivr.net — try disabling it for this site, or use a different browser.'
+        );
+        const ffmpeg = new FFmpeg();
+        let lastEngineLog = '(no message received from the engine)';
+        ffmpeg.on('log', ({ message }) => {
+          lastEngineLog = message;
+          setStatus('Engine: ' + message);
+        });
+        const baseURL = `https://cdn.jsdelivr.net/npm/@ffmpeg/core@${FFMPEG_CORE_VERSION}/dist/esm`;
+        const coreURL = await withTimeout(
+          toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+          45000, 'Timed out downloading the FFmpeg engine core. Check your connection, or a shield/ad-blocker may be blocking cdn.jsdelivr.net — try disabling it for this site.'
+        );
+        const wasmURL = await withTimeout(
+          toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+          60000, 'Timed out downloading the FFmpeg engine (~30MB). Check your connection, or a shield/ad-blocker may be blocking cdn.jsdelivr.net — try disabling it for this site.'
+        );
+        // The FFmpeg wrapper itself spins up a Worker from this script. Browsers refuse to
+        // construct a Worker from a cross-origin URL, so fetch it as a blob too (same trick
+        // as coreURL/wasmURL) to make it same-origin.
+        const classWorkerURL = await withTimeout(
+          toBlobURL(`https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@${FFMPEG_VERSION}/dist/esm/worker.js`, 'text/javascript'),
+          20000, 'Timed out downloading the FFmpeg worker script. Check your connection, or a shield/ad-blocker may be blocking cdn.jsdelivr.net — try disabling it for this site.'
+        );
+        setStatus('Initializing engine…');
+        try{
+          await withTimeout(ffmpeg.load({ coreURL, wasmURL, classWorkerURL }), 45000, '__timeout__');
+        } catch(loadErr){
+          if(loadErr.message === '__timeout__'){
+            throw new Error(`The FFmpeg engine downloaded but never finished initializing (last engine message: "${lastEngineLog}"). This is a known flaky spot in ffmpeg.wasm on some mobile/non-Chromium browsers — try Chrome or a desktop browser.`);
+          }
+          throw new Error(`FFmpeg engine failed to initialize: ${loadErr.message} (last engine message: "${lastEngineLog}")`);
+        }
+        ffmpegInstance = ffmpeg;
+        return ffmpeg;
+      } catch(err){
+        ffmpegLoadPromise = null; // allow retry on next press
+        throw err;
+      }
+    })();
+    return ffmpegLoadPromise;
+  }
+
+  async function compressMedia(file, targetBytes, kind){
+    const ffmpeg = await getFFmpeg();
+    const { fetchFile } = await import(`https://cdn.jsdelivr.net/npm/@ffmpeg/util@${FFMPEG_UTIL_VERSION}/dist/esm/index.js`);
+
+    const inputName = 'input.' + (ext(file) || 'bin');
+    const outputName = kind === 'video' ? 'output.mp4' : 'output.mp3';
+
+    setStatus('Reading file…');
+    animateFill(5);
+    await ffmpeg.writeFile(inputName, await fetchFile(file));
+
+    // Probe duration by running ffmpeg with no output — it fails, but logs the info we need.
+    let duration = null;
+    const durationHandler = ({ message }) => {
+      const m = message.match(/Duration:\s*(\d+):(\d+):(\d+\.\d+)/);
+      if(m && duration === null){
+        duration = (+m[1]) * 3600 + (+m[2]) * 60 + parseFloat(m[3]);
+      }
+    };
+    ffmpeg.on('log', durationHandler);
+    setStatus('Reading media duration…');
+    try{ await ffmpeg.exec(['-i', inputName]); } catch(e){ /* expected: no output specified */ }
+    if(typeof ffmpeg.off === 'function') ffmpeg.off('log', durationHandler);
+
+    if(!duration || !isFinite(duration) || duration <= 0){
+      throw new Error("Couldn't read this file's duration — it may be corrupt or an unsupported codec.");
+    }
+
+    const progressHandler = ({ progress }) => {
+      if(progress >= 0 && progress <= 1) animateFill(15 + progress * 75);
+    };
+    ffmpeg.on('progress', progressHandler);
+
+    const targetBits = targetBytes * 8;
+
+    async function runPass(videoKbps, audioKbps){
+      setStatus(kind === 'video'
+        ? `Encoding… ${videoKbps}kbps video / ${audioKbps}kbps audio (this can take a while)`
+        : `Encoding… ${audioKbps}kbps audio`);
+      const args = kind === 'video'
+        ? ['-i', inputName, '-c:v', 'libx264', '-preset', 'veryfast',
+           '-b:v', videoKbps + 'k', '-maxrate', Math.round(videoKbps * 1.45) + 'k',
+           '-bufsize', Math.round(videoKbps * 2) + 'k',
+           '-c:a', 'aac', '-b:a', audioKbps + 'k', '-movflags', '+faststart', outputName]
+        : ['-i', inputName, '-c:a', 'libmp3lame', '-b:a', audioKbps + 'k', outputName];
+      try{
+        await ffmpeg.deleteFile(outputName);
+      } catch(e){ /* nothing to delete yet */ }
+      await ffmpeg.exec(args);
+      const data = await ffmpeg.readFile(outputName);
+      return new Blob([data], { type: kind === 'video' ? 'video/mp4' : 'audio/mpeg' });
+    }
+
+    let blob, videoKbps, audioKbps;
+    if(kind === 'video'){
+      audioKbps = (targetBits / duration) > 300000 ? 160 : 96;
+      videoKbps = Math.max(80, Math.floor(targetBits / duration / 1000) - audioKbps);
+      blob = await runPass(videoKbps, audioKbps);
+      for(let i = 0; i < 2 && blob.size > targetBytes * 1.08; i++){
+        const factor = (targetBytes / blob.size) * 0.93;
+        videoKbps = Math.max(80, Math.floor(videoKbps * factor));
+        blob = await runPass(videoKbps, audioKbps);
+      }
+    } else {
+      audioKbps = Math.max(24, Math.min(320, Math.floor(targetBits / duration / 1000)));
+      blob = await runPass(0, audioKbps);
+      for(let i = 0; i < 2 && blob.size > targetBytes * 1.08; i++){
+        const factor = (targetBytes / blob.size) * 0.93;
+        audioKbps = Math.max(16, Math.floor(audioKbps * factor));
+        blob = await runPass(0, audioKbps);
+      }
+    }
+
+    if(typeof ffmpeg.off === 'function') ffmpeg.off('progress', progressHandler);
+    return blob;
+  }
+
+  // ---- Generic file: gzip via CompressionStream ----
+  async function compressGeneric(file){
+    if(!('CompressionStream' in window)){
+      throw new Error('This browser does not support built-in compression (CompressionStream).');
+    }
+    setStatus('Running gzip (level: browser default)…');
+    animateFill(30);
+    const cs = new CompressionStream('gzip');
+    const stream = file.stream().pipeThrough(cs);
+    const blob = await new Response(stream).blob();
+    animateFill(70);
+    return blob;
+  }
+
+  pressBtn.addEventListener('click', async () => {
+    if(!currentFile) return;
+    const targetBytes = Math.round(Number(targetValue.value) * Number(targetUnit.value));
+    if(!targetBytes || targetBytes <= 0){
+      setStatus('Enter a valid target size.');
+      return;
+    }
+
+    pressBtn.disabled = true;
+    result.classList.remove('show');
+    animateFill(5);
+
+    try{
+      let outBlob, outName, met;
+      const mode = detectMode(currentFile);
+      const baseName = currentFile.name.replace(/\.[^.]+$/, '');
+
+      if(mode === 'image'){
+        outBlob = await compressImage(currentFile, targetBytes);
+        const useJpeg = currentFile.type !== 'image/png' || allowJpeg.checked;
+        const outExt = useJpeg ? 'jpg' : 'png';
+        outName = baseName + '-compressed.' + outExt;
+        met = outBlob.size <= targetBytes;
+      } else if(mode === 'video'){
+        outBlob = await compressMedia(currentFile, targetBytes, 'video');
+        outName = baseName + '-compressed.mp4';
+        met = outBlob.size <= targetBytes;
+      } else if(mode === 'audio'){
+        outBlob = await compressMedia(currentFile, targetBytes, 'audio');
+        outName = baseName + '-compressed.mp3';
+        met = outBlob.size <= targetBytes;
+      } else {
+        outBlob = await compressGeneric(currentFile);
+        outName = currentFile.name + '.gz';
+        met = outBlob.size <= targetBytes;
+      }
+
+      animateFill(100);
+      setStatus('Done.');
+
+      const url = URL.createObjectURL(outBlob);
+      downloadLink.href = url;
+      downloadLink.download = outName;
+
+      resOriginal.textContent = fmtBytes(currentFile.size);
+      resFinal.textContent = fmtBytes(outBlob.size);
+      const reduction = 100 * (1 - outBlob.size / currentFile.size);
+      resRatio.textContent = (reduction >= 0 ? '-' : '+') + Math.abs(reduction).toFixed(1) + '%';
+      resMet.textContent = met ? 'YES' : 'NO — smallest achievable shown';
+
+      if(!met){
+        if(mode === 'image'){
+          resultNote.textContent = 'Could not reach the target without going below a usable resolution — this is the smallest version found.';
+        } else if(mode === 'video' || mode === 'audio'){
+          resultNote.textContent = 'Could not quite reach the target after a few bitrate corrections — this is the closest result. Very small targets on longer clips may need a lower resolution or a shorter clip to hit exactly.';
+        } else {
+          resultNote.textContent = 'Gzip could not compress this file to the target size. This is normal for already-compressed formats (zip, mp4, jpg, mp3…), which have little redundancy left to remove.';
+        }
+      } else {
+        resultNote.textContent = 'Target reached.';
+      }
+
+      result.classList.add('show');
+    } catch(err){
+      setStatus('Error: ' + err.message);
+    } finally {
+      pressBtn.disabled = false;
+    }
+  });
+})();
+</script>
+</body>
+</html>
