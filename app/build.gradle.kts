@@ -43,8 +43,9 @@ dependencies {
     implementation("androidx.documentfile:documentfile:1.0.1")
 
     // Local, on-device audio/video transcoding (no server calls).
-    // NOTE: the original com.arthenica ffmpeg-kit project was archived in 2025.
-    // If this coordinate 404s in Maven Central, swap it for the community-maintained
-    // fork published under "io.github.ffmpeg-kit" (same API surface).
-    implementation("com.arthenica:ffmpeg-kit-full:6.0-2")
+    // The original com.arthenica ffmpeg-kit-full artifact was pulled from Maven
+    // Central in April 2025 when the project was retired. This is a community
+    // republish of the same library (same com.arthenica.ffmpegkit Java package,
+    // just a new group/artifact id) — no source changes needed.
+    implementation("com.moizhassan.ffmpeg:ffmpeg-kit-16kb:6.1.1")
 }
