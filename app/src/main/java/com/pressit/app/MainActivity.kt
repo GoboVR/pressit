@@ -81,25 +81,28 @@ class MainActivity : AppCompatActivity() {
             try {
                 when {
                     mime.startsWith("image/") -> {
-                        outFile = File(outDir, "compressed_${System.currentTimeMillis()}.jpg")
+                        val target = File(outDir, "compressed_${System.currentTimeMillis()}.jpg")
+                        outFile = target
                         val orientation = readExifOrientation(uri)
                         contentResolver.openInputStream(uri)?.use { input ->
-                            ok = ImageCompressor.compress(input, outFile, targetBytes, orientation)
+                            ok = ImageCompressor.compress(input, target, targetBytes, orientation)
                         }
                     }
                     mime.startsWith("video/") -> {
-                        outFile = File(outDir, "compressed_${System.currentTimeMillis()}.mp4")
+                        val target = File(outDir, "compressed_${System.currentTimeMillis()}.mp4")
+                        outFile = target
                         val localCopy = copyToCache(uri, "in_video")
                         ok = AudioVideoCompressor.compressVideo(
-                            localCopy.absolutePath, outFile, targetBytes
+                            localCopy.absolutePath, target, targetBytes
                         ) { p -> runOnUiThread { binding.progressBar.progress = p } }
                         localCopy.delete()
                     }
                     mime.startsWith("audio/") -> {
-                        outFile = File(outDir, "compressed_${System.currentTimeMillis()}.m4a")
+                        val target = File(outDir, "compressed_${System.currentTimeMillis()}.m4a")
+                        outFile = target
                         val localCopy = copyToCache(uri, "in_audio")
                         ok = AudioVideoCompressor.compressAudio(
-                            localCopy.absolutePath, outFile, targetBytes
+                            localCopy.absolutePath, target, targetBytes
                         ) { p -> runOnUiThread { binding.progressBar.progress = p } }
                         localCopy.delete()
                     }
