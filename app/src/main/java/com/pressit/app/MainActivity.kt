@@ -109,12 +109,13 @@ class MainActivity : AppCompatActivity() {
                 ok = false
             }
 
+            val finishedFile = outFile
             runOnUiThread {
                 binding.progressBar.visibility = android.view.View.GONE
                 binding.btnCompress.isEnabled = true
-                if (ok && outFile != null && outFile.exists()) {
-                    resultFile = outFile
-                    val kb = outFile.length() / 1024.0
+                if (ok && finishedFile != null && finishedFile.exists()) {
+                    resultFile = finishedFile
+                    val kb = finishedFile.length() / 1024.0
                     binding.tvStatus.text = "Done — result is ${"%.1f".format(kb)} KB " +
                         "(target was ${"%.1f".format(targetBytes / 1024.0)} KB)"
                     binding.btnShare.visibility = android.view.View.VISIBLE

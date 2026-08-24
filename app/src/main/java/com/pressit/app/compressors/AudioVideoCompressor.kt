@@ -16,7 +16,7 @@ import kotlin.math.roundToLong
  */
 object AudioVideoCompressor {
 
-    interface ProgressListener {
+    fun interface ProgressListener {
         fun onProgress(percent: Int)
     }
 
