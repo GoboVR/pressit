@@ -1,0 +1,7 @@
+<resources>
+    <style name="Theme.PressIt" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/press_primary</item>
+        <item name="colorPrimaryDark">@color/press_primary_dark</item>
+        <item name="android:windowBackground">@color/press_bg</item>
+    </style>
+</resources>
